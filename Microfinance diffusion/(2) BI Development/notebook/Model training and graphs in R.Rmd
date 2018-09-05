@@ -1,0 +1,162 @@
+---
+title: "Context analysis- Model training and graphs"
+author: 
+- Xiaoyan Zhou 
+date: "21/05/2018"
+output:
+  html_document: 
+    smart: false
+    theme: "paper"
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+---
+
+<br>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r, message=FALSE, warning=FALSE}
+library(readr)
+library(stargazer)
+library(ggplot2)
+library(glmnet)
+library(randomForest)
+```
+
+
+1. load data
+
+```{r, message=TRUE, warning=FALSE}
+data <- read_csv("cross_sectional_45_final.csv")
+summary(data)
+data <- subset(data,select =  -c(1))
+```
+
+
+2.Model training and variable selection
+
+Split to training set& validation set
+```{r, warning=FALSE}
+set.seed(222)
+n = nrow(data)
+trainIndex = sample(1:n, size = round(0.7*n), replace=FALSE)
+train = data[trainIndex ,]
+test = data[-trainIndex ,]
+
+lambda <- 10^seq(10, -2, length = 100)
+x<- model.matrix(mf_rate_nonleader~.,data)[,-1]
+y<-data$mf_rate_nonleader
+ytest = y[-trainIndex]
+```
+
+
+
+2.1lasso regression
+
+```{r, warning=FALSE}
+
+cv <- cv.glmnet(x[trainIndex,], y[trainIndex], family = "gaussian", nfold = 5, type.measure = "mse", alpha = 1)
+lasso.model<- glmnet(x[trainIndex,],y[trainIndex], family = "gaussian", lambda = cv$lambda.min, alpha = 1)
+pred_value <-predict(lasso.model,x[-trainIndex,],s= cv$lambda.min)
+mse_lasso <-mean((pred_value-ytest)^2)
+lasso.coef  <- predict(lasso.model, type = 'coefficients', s = cv$lambda.min)
+lasso.coef 
+print(paste0("MSE for Lasso: ", mse_lasso))
+print('Coefficient for lasso:')
+```
+
+2.2 random forest
+
+```{r, warning=FALSE}
+set.seed(100)
+rf <- randomForest(mf_rate_nonleader ~ ., train, ntree = 100,nodesize = 5)
+imp <-importance(rf)
+pred_value<- predict(rf, test)
+mse_rf <-mean((pred_value-ytest)^2)
+mse_rf
+```
+
+important variables.
+IncNodePurity
+at each split, you can calculate how much this split reduces node impurity (for regression trees, indeed, the difference between RSS before and after the split). This is summed over all splits for that variable, over all trees.
+
+```{r}
+importance(rf)
+
+```
+
+```{r, warning=FALSE}
+imp <-as.data.frame(imp)
+imp$IncNodePurity <-round(imp$IncNodePurity, digit= 3)
+
+area.color <- c("tomato1", "tomato1", "skyblue2", "skyblue2","skyblue2")
+ggplot(aes(x = reorder(row.names(imp),-IncNodePurity), y = IncNodePurity), data =imp) +
+  geom_bar(stat = 'identity', fill=area.color,width = 0.6) +
+  scale_x_discrete(labels=c("Eigenvector_centrality_taking_leader" = "Ev_cen_taking_leader", "fraction_of_taking_leaders" = "Frac_taking_leader","household" = "Household", "leader_eigenvector_centrality" = "Ev_cen_leader", "leader_degrees" ="Leader_degree" ))+
+  geom_text(aes(label=IncNodePurity), vjust=1.6, color="white", size=3.5)+
+  theme(axis.text.x = element_text(face="bold",size=8, angle=5))+
+  labs(x='Features',  y = "Importance (IncNodePurity)")+
+  theme_minimal()+
+  ggtitle("Feature importance in random forest algorithm")
+```
+
+3. linear regression to compare prediction outcome
+
+
+```{r, warning=FALSE}
+linear.mod1 <- lm(mf_rate_nonleader ~ ., train)
+pred_value<- predict(linear.mod1, test)
+mse_linear <- mean((pred_value-ytest)^2)
+
+
+linear.mod2 <- lm(mf_rate_nonleader ~ fraction_of_taking_leaders + Eigenvector_centrality_taking_leader, train)
+pred_value2<- predict(linear.mod2, test)
+mse_linear2 <- mean((pred_value2-ytest)^2)
+
+mse<- c(round(mse_linear,digit = 4), round(mse_linear2,digit = 4))
+features <-c("All","2 Selected")
+mse_c <-data.frame(features,mse)
+
+area.color2 <- c( "tomato1","skyblue2")
+ggplot(aes(x = features, y = mse), data =mse_c) +
+  geom_bar(stat = 'identity', fill=area.color2,width = 0.4) +
+  geom_text(aes(label=mse), vjust=1.6, color="white", size=3.5)+
+  theme(axis.text.x = element_text(face="bold",size=8, angle=5))+
+  labs(x='Linear regression variables',  y = "MSE")+
+  theme_minimal()+
+  ggtitle("MSE Comparision")
+```
+
+```{r, warning=FALSE}
+imp <- read_csv("~/IC/Workforce Analytics/Individual assignment/imp.csv")
+imp <-as.data.frame(imp)
+
+area.color <- c("tomato1", "tomato1","tomato1","tomato1","tomato1", "skyblue2", "skyblue2","skyblue2","skyblue2","skyblue2","skyblue2","skyblue2")
+ggplot(aes(x = reorder(features,-Importance), y = Importance), data =imp) +
+  geom_bar(stat = 'identity', fill=area.color,width = 0.6) +
+  geom_text(aes(label=Importance), vjust=1, color="white", size=2.5)+
+  theme_minimal()+
+  labs(x='Features',  y = "Importance")+
+  ggtitle("Feature importance in random forest algorithm")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+```{r}
+mse <- read_csv("~/IC/Workforce Analytics/Individual assignment/mse.csv")
+mse_c <-as.data.frame(mse)
+
+area.color2 <- c( "tomato1","skyblue2")
+ggplot(aes(x = Features, y = round(mse,digit = 2)), data =mse_c) +
+  geom_bar(stat = 'identity', fill=area.color2,width = 0.4) +
+  geom_text(aes(label=round(mse,digit = 2)), vjust=1.6, color="white", size=3.5)+
+  theme(axis.text.x = element_text(face="bold",size=8, angle=5))+
+  labs(x='Non Negative Binomial Regression Variables',  y = "MSE")+
+  theme_minimal()+
+  ggtitle("MSE Comparision")
+
+```
