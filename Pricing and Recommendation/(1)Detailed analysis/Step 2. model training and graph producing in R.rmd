@@ -1,0 +1,230 @@
+---
+title: "Deloitte Monitor- Analytics chanllenge"
+author: "Xiaoyan Zhou"
+date: "12/07/2018"
+output:
+  html_document:
+    number_sections: yes
+    smart: no
+    theme: paper
+    toc: yes
+    toc_depth: 4
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
+---
+
+<br>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+library(stargazer)
+library(ggplot2)
+library(glmnet)
+library(randomForest)
+library(tidyr)
+```
+
+1. Random Forest forcasting 201610 sales volumn
+
+Product A
+```{r}
+G1 <- read.csv("D26387251.csv")
+
+```
+Split to training set, validation set and test set( for prediction)
+
+```{r}
+data <- G1
+sapply(data,class)
+train <- data[data$sales_small.WeekKey <= 201550,-c(1,2,3,21) ]
+valid <- data[201550< data$sales_small.WeekKey & data$sales_small.WeekKey<= 201608,-c(1,2,3,21) ]
+test <- data[ 201608< data$sales_small.WeekKey,-c(1,2,3,24)]
+train <- na.omit(train)
+valid<- na.omit(valid)
+
+
+test$price_change_nw <-0
+#test$price_change_nw <-1 # use this when predicting the impact on providing 1 pound promotions
+
+
+
+
+
+valid_y <-valid$sales_small.SalesVolume_nw
+test_y <-test$sales_small.SalesVolume_nw
+```
+
+Train on the training set # manually tune ntree and nodesize to minimize the mse, can write for loop to test more combination
+```{r}
+
+set.seed(100)
+rf <- randomForest(sales_small.SalesVolume_nw ~ ., train, ntree = 100,nodesize = 10)
+imp <-importance(rf)
+pred_value<- predict(rf, valid)
+mse_rf <-mean((pred_value-valid_y)^2)
+mse_rf
+
+```
+
+Feature importance in forcasting product A
+```{r}
+imp <-as.data.frame(imp)
+imp$IncNodePurity <-round(imp$IncNodePurity, digit= 3)
+
+area.color <- c("tomato1", "tomato1","tomato1","tomato1","tomato1", "tomato1", "tomato1", "skyblue2", "skyblue2","skyblue2","skyblue2",
+                "skyblue2","skyblue2","skyblue2","skyblue2","skyblue2","skyblue2","skyblue2","skyblue2")
+ggplot(aes(x = reorder(row.names(imp),-IncNodePurity), y = IncNodePurity), data =imp) +
+  geom_bar(stat = 'identity', fill=area.color,width = 0.6) +
+  theme_minimal()+
+  labs(x='Features',  y = "Importance")+
+  ggtitle("Feature importance in random forest algorithm - ProductA")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+next week prediction
+```{r}
+# train on training and validation set
+train <- data[data$sales_small.WeekKey<= 201608,-c(1,2,3,24) ]
+train <- na.omit(train)
+set.seed(100)
+rf <- randomForest(sales_small.SalesVolume_nw ~ ., train, ntree = 100,nodesize = 10)
+
+pred_value<- predict(rf, test)
+pred_value <- round(pred_value)
+```
+
+
+
+```{r}
+historic <- data[data$sales_small.WeekKey <= 201609 &data$sales_small.WeekKey >= 201600,c(3,7) ]
+colnames(historic) <-c("Week","D26387251")
+
+predict_week <- rep(201610, length(pred_value))
+
+prediction <- data.frame(predict_week, pred_value)
+colnames(prediction)<- c("Week","D26387251")
+```
+
+```{r}
+sales_volume_D26387251<- rbind(historic, prediction)
+PA <-aggregate(sales_volume_D26387251$D26387251, by=list(Category=sales_volume_D26387251$Week), FUN=sum)
+```
+
+
+Change the product code and repeat the analysis for the other 3 products, write the prediction to a csv filr
+
+```{r}
+#sales_volume_Dbca94c97<- rbind(historic, prediction)
+#PB <-aggregate(sales_volume_Dbca94c97$Dbca94c97, by=list(Category=sales_volume_Dbca94c97$Week), FUN=sum)
+
+#sales_volume_Dedf80f3a<- rbind(historic, prediction)
+#PC <-aggregate(sales_volume_Dedf80f3a$Dedf80f3a, by=list(Category=sales_volume_Dedf80f3a$Week), FUN=sum)
+
+
+#sales_volume_D606565a1<- rbind(historic, prediction)
+#PD <-aggregate(sales_volume_D606565a1$D606565a1, by=list(Category=sales_volume_D606565a1$Week), FUN=sum)
+
+#sales_volume <-data.frame(Week = PA$Category, D26387251 = PA$x, Dbca94c97 = PB$x, Dedf80f3a = PC$x, D606565a1 = PD$x)
+#sales_volume 
+#write.csv(sales_volume, "sales_volume.csv")
+#write.csv(sales_volume, "sales_volume_reduce_price.csv")
+```
+
+Add one pound to the price change nextweek and redo the steps before to predict the sales volume after promotion, write it to a csv file
+```{r}
+#test$price_change_nw <-1 # use this when predicting the impact on providing 1 pound promotions
+#write.csv(sales_volume, "sales_volume_reduce_price.csv")
+
+```
+
+
+
+2. Graphs for forcasting
+
+produce a dataframe that can use to make graph
+```{r}
+forcast <-read.csv("sales_volume.csv")
+reduce_forcast <- read.csv("sales_volume_reduce_price.csv")
+
+forcast$Week <- as.character(forcast$Week)
+forcast$Week[forcast$Week== "201609"] <- "Week9"
+forcast$Week[forcast$Week== "201610"] <- "Week10-Forcast"
+
+reduce_forcast$Week <- as.character(reduce_forcast$Week)
+reduce_forcast$Week[reduce_forcast$Week== "201610"] <- "Week10-Promote"
+
+
+compare <-rbind(forcast[9:10,2:6],reduce_forcast[10,2:6])
+compare
+```
+
+201609 and 201610 compare
+```{r}
+forcast_pure <-forcast[9:10,2:6]
+compare_DF1 <- forcast_pure %>% gather(Product, Sales_volume, D26387251:D606565a1)
+compare_DF1$Week <- factor(compare_DF1$Week, levels = c("Week9", "Week10-Forcast"))
+
+area.color <- c("tomato1","skyblue2","#9999CC")
+
+ggplot(compare_DF1, aes(fill=Week, y=Sales_volume, x=Product)) + 
+    geom_bar(position="dodge", stat="identity")+ scale_fill_manual(values = area.color)+
+  theme_minimal()+
+  geom_text(aes(label=Sales_volume),position = position_dodge(width = 1), vjust=-0.8, color="black", size=3)+
+  scale_x_discrete(labels=c("A","D","B","C" ))+
+  labs(x='Products',  y = "Sales Volume")+
+  ggtitle("201610 Sales Volume Forcast")
+```
+
+
+```{r}
+
+compare_DF <- compare %>% gather(Product, Sales_volume, D26387251:D606565a1)
+compare_DF$Week <- factor(compare_DF$Week, levels = c("Week9", "Week10-Forcast", "Week10-Promote"))
+compare_DF 
+```
+
+
+201609 and 201610 and promotion compare
+```{r}
+
+area.color <- c("tomato1","skyblue2","#9999CC")
+
+ggplot(compare_DF, aes(fill=Week, y=Sales_volume, x=Product)) + 
+    geom_bar(position="dodge", stat="identity")+ scale_fill_manual(values = area.color)+
+  theme_minimal()+
+  geom_text(aes(label=Sales_volume),position = position_dodge(width = 1), vjust=-0.8, color="black", size=3)+
+  scale_x_discrete(labels=c("A","D","B","C" ))+
+  labs(x='Products',  y = "Sales Volume")+
+  ggtitle("201610 Sales Volume Forcast - Promotion")
+```
+
+
+3. price elasticity 
+```{r}
+price_elasticity <- read.csv("product_elasticity.csv")
+
+```
+
+
+```{r}
+means <- aggregate(elasticity ~  products.Group,price_elasticity, mean)
+means$elasticity <- round(means$elasticity, 1)
+ggplot(price_elasticity, aes(x=products.Group, y=elasticity, color=products.Group)) +geom_boxplot()+
+  geom_text(data = means, aes(label = elasticity, y = elasticity  -2.2))+
+  theme_minimal()+
+  scale_x_discrete(labels=c("A","E","F","D","B","G","C" ))+
+  labs(x='Products',  y = "Price Elasticity")+
+  ggtitle("Price Elasticity")+
+  theme(legend.position="none")
+  
+```
+
+
+
+

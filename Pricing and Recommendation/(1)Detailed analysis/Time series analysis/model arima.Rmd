@@ -1,0 +1,409 @@
+---
+title: "Sales volume forcasting"
+author: "xiaoyan zhou"
+date: "2018Äê7ÔÂ10ÈÕ"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(xlsx)
+library(astsa)
+library(forecast)
+library(tseries)
+library(ggplot2)
+library(readr)
+
+```
+
+```{r}
+time_series <- read_csv("S26387251.csv")
+sapply(time_series,class)
+```
+
+
+```{r}
+count_ma = ts(na.omit(time_series$sales_small.SalesVolume), frequency=12)
+decomp = stl(count_ma, s.window="periodic")
+deseasonal_cnt <- seasadj(decomp)
+plot(decomp)
+```
+
+1. Split data into training set and test set:
+
+
+
+
+```{r}
+
+S1<-ts(time_series[, 3], frequency =52, start = c(2015,1))
+
+train1<-window(S1,start=c(2015,1),end=c(2016,1))
+
+test1<-window(S1,start=c(2016,1))
+
+
+```
+
+
+
+
+
+```{r}
+autoplot(train1)
+
+```
+```{r,echo=FALSE, message=FALSE}
+adf.test(train1) #null: not stationary
+pp.test(train1)
+kpss.test(train1)
+```
+
+
+
+```{r}
+ndiffs(train1)
+nsdiffs(train1, m = 52, test = "ocsb", max.D = 1) 
+```
+
+
+
+
+
+```{r}
+ggtsdisplay(train1,lag.max=52)
+
+```
+
+```{r}
+acf(train1)
+```
+
+
+
+```{r}
+auto.arima(train1,d=1,D=0, trace = TRUE, ic = 'aicc') 
+```
+
+
+
+```{r}
+
+train1.m0 <- Arima(train1, order = c(0,1,0), include.drift = FALSE)
+
+AIC(train1.m0)
+```
+```{r,echo=FALSE, message=FALSE,fig.cap="residual-model0-store44673\\label{fig:2}"}
+checkresiduals(train1.m0)
+```
+
+```{r,echo=FALSE, message=FALSE}
+accuracy(forecast(train1.m0, h = 8),test1) # what is h?
+
+```
+
+
+
+```{r,echo=FALSE, message=FALSE,fig.cap="Forecast on test-store44673\\label{fig:3}"}
+autoplot(train1)+ylab('Demand')+autolayer(test1,series='actural')+autolayer(forecast(train1.m0, h = 8)$mean,series='model 0')
+```
+
+```{r,echo=FALSE, message=FALSE,fig.cap="Forecast-store20974"}
+S1.m<- Arima(S1, order = c(0,1,0), include.drift = TRUE)
+#S1.m <-Arima(S1, order = c(0,1,0), include.drift = FALSE)
+S1.f<-forecast(S1.m, h = 8)
+autoplot(S1.f)
+```
+
+```{r}
+summary(S1.f)
+```
+
+S2:
+```{r}
+time_series <- read_csv("Sbca94c97.csv")
+sapply(time_series,class)
+```
+
+
+
+```{r}
+
+S1<-ts(time_series[, 3], frequency =52, start = c(2015,1))
+
+train1<-window(S1,start=c(2015,1),end=c(2016,1))
+
+test1<-window(S1,start=c(2016,1))
+
+
+```
+
+
+
+
+
+```{r}
+autoplot(train1)
+
+```
+```{r,echo=FALSE, message=FALSE}
+adf.test(train1) #null: not stationary
+pp.test(train1)
+kpss.test(train1)
+```
+
+
+
+```{r}
+ndiffs(train1)
+nsdiffs(train1, m = 52, test = "ocsb", max.D = 1) 
+```
+
+
+
+
+
+```{r}
+ggtsdisplay(train1,lag.max=52)
+
+```
+
+```{r}
+acf(train1)
+```
+
+
+
+```{r}
+auto.arima(train1,d=0,D=0, trace = TRUE, ic = 'aicc') 
+```
+
+```{r}
+
+train1.m0 <- Arima(train1, order = c(1,0,0),include.drift = FALSE)
+
+AIC(train1.m0)
+```
+
+```{r,echo=FALSE, message=FALSE,fig.cap="residual-model0-store44673\\label{fig:2}"}
+checkresiduals(train1.m0)
+```
+```{r,echo=FALSE, message=FALSE}
+accuracy(forecast(train1.m0, h = 8),test1) # what is h?
+
+```
+
+
+
+```{r,echo=FALSE, message=FALSE,fig.cap="Forecast on test-store44673\\label{fig:3}"}
+autoplot(train1)+ylab('Demand')+autolayer(test1,series='actural')+autolayer(forecast(train1.m0, h = 8)$mean,series='model 0')
+```
+
+```{r,echo=FALSE, message=FALSE,fig.cap="Forecast-store20974"}
+S1.m<- Arima(S1, order = c(1,0,0), include.drift = FALSE)
+#S1.m <-Arima(S1, order = c(0,1,0), include.drift = FALSE)
+S1.f<-forecast(S1.m, h = 10)
+autoplot(S1.f)
+```
+
+```{r}
+summary(S1.f)
+```
+
+S3:
+
+
+
+```{r}
+time_series <- read_csv("Sedf80f3a.csv")
+sapply(time_series,class)
+```
+
+
+
+```{r}
+
+S1<-ts(time_series[, 3], frequency =52, start = c(2015,1))
+
+train1<-window(S1,start=c(2015,1),end=c(2016,1))
+
+test1<-window(S1,start=c(2016,1))
+
+
+```
+
+
+
+
+
+```{r}
+autoplot(train1)
+
+```
+```{r,echo=FALSE, message=FALSE}
+adf.test(train1) #null: not stationary
+pp.test(train1)
+kpss.test(train1)
+```
+
+
+
+```{r}
+ndiffs(train1)
+nsdiffs(train1, m = 52, test = "ocsb", max.D = 1) 
+```
+
+
+
+
+
+```{r}
+ggtsdisplay(train1,lag.max=52)
+
+```
+
+```{r}
+acf(train1)
+```
+
+
+
+```{r}
+auto.arima(train1,d=0,D=0, trace = TRUE, ic = 'aicc') 
+```
+
+```{r}
+
+train1.m0 <- Arima(train1, order = c(1,0,0),include.drift = FALSE)
+
+AIC(train1.m0)
+```
+
+```{r,echo=FALSE, message=FALSE,fig.cap="residual-model0-store44673\\label{fig:2}"}
+checkresiduals(train1.m0)
+```
+```{r,echo=FALSE, message=FALSE}
+accuracy(forecast(train1.m0, h = 8),test1) # what is h?
+
+```
+
+
+
+```{r,echo=FALSE, message=FALSE,fig.cap="Forecast on test-store44673\\label{fig:3}"}
+autoplot(train1)+ylab('Demand')+autolayer(test1,series='actural')+autolayer(forecast(train1.m0, h = 8)$mean,series='model 0')
+```
+
+```{r,echo=FALSE, message=FALSE,fig.cap="Forecast-store20974"}
+S1.m<- Arima(S1, order = c(1,0,0),include.drift = FALSE)
+#S1.m <-Arima(S1, order = c(0,1,0), include.drift = FALSE)
+S1.f<-forecast(S1.m, h = 10)
+autoplot(S1.f)
+```
+
+```{r}
+summary(S1.f)
+```
+
+
+
+S4:
+
+```{r}
+time_series <- read_csv("S606565a1.csv")
+sapply(time_series,class)
+```
+
+
+
+```{r}
+
+S1<-ts(time_series[, 3], frequency =52, start = c(2015,1))
+
+train1<-window(S1,start=c(2015,1),end=c(2016,1))
+
+test1<-window(S1,start=c(2016,1))
+
+
+```
+
+
+
+
+
+```{r}
+autoplot(train1)
+
+```
+```{r,echo=FALSE, message=FALSE}
+adf.test(train1) #null: not stationary
+pp.test(train1)
+kpss.test(train1)
+```
+
+
+
+```{r}
+ndiffs(train1)
+nsdiffs(train1, m = 52, test = "ocsb", max.D = 1) 
+```
+
+
+
+
+
+```{r}
+ggtsdisplay(train1,lag.max=52)
+
+```
+
+```{r}
+acf(train1)
+```
+
+
+
+```{r}
+auto.arima(train1,d=0,D=0, trace = TRUE, ic = 'aicc') 
+```
+
+```{r}
+
+train1.m0 <- Arima(train1, order = c(1,0,1),include.drift = TRUE)
+
+AIC(train1.m0)
+```
+
+```{r,echo=FALSE, message=FALSE,fig.cap="residual-model0-store44673\\label{fig:2}"}
+checkresiduals(train1.m0)
+```
+```{r,echo=FALSE, message=FALSE}
+accuracy(forecast(train1.m0, h = 8),test1) # what is h?
+
+```
+
+
+
+```{r,echo=FALSE, message=FALSE,fig.cap="Forecast on test-store44673\\label{fig:3}"}
+autoplot(train1)+ylab('Demand')+autolayer(test1,series='actural')+autolayer(forecast(train1.m0, h = 8)$mean,series='model 0')
+```
+
+```{r,echo=FALSE, message=FALSE,fig.cap="Forecast-store20974"}
+S1.m<- Arima(S1, order = c(1,0,1), include.drift = TRUE)
+#S1.m <-Arima(S1, order = c(0,1,0), include.drift = FALSE)
+S1.f<-forecast(S1.m, h = 10)
+autoplot(S1.f)
+```
+
+```{r}
+summary(S1.f)
+```
+
+
+
+
+
+
+
