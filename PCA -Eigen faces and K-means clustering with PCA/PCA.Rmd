@@ -1,0 +1,305 @@
+---
+title: "Advanced Machine Learning Group Assignment 3"
+author: "Team U, Avi Mago, Louis Montagut, Xiaoyan Zhou"
+fontsize: 11pt
+date: "12/03/2018"
+output:
+  html_document: 
+    smart: false
+    code_folding: "hide"
+    theme: "paper"
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(R.matlab)
+data = readMat("olivettifaces.mat")  # Have it as a .mat file
+faces = data$faces
+dim(faces)
+NumFaces = length(faces[1,])
+NumPixels = length(faces[,1]) 
+```
+
+```{r}
+NumFacesPCA = 400;  # Number of images we will use for PCA
+set.seed(1)
+index = sample(1:NumFaces, NumFacesPCA);
+TrainImages = faces[,index]
+```
+
+
+```{r}
+library(plotrix)
+n = 2
+par(mfrow = c(n,n),     # 2x2 layout
+    oma = c(0, 0, 0, 0), # controls rows for text at outer  margins
+    mar = c(1, 1, 0, 0), # space for one row of text at ticks and to separate plots
+    mgp = c(2, 1, 0),    # axis label at 2 rows distance, tick labels at 1 row
+    xpd = NA)  
+for (i in 1:n^2){
+  Face = matrix(TrainImages[,i],sqrt(NumPixels),byrow=FALSE)
+  color2D.matplot(Face,axes=FALSE)
+}
+```
+Let's compute the mean face and plot it. 
+```{r}
+mean_image = apply(TrainImages, 1, mean)
+mean_Face = matrix(mean_image,sqrt(NumPixels),byrow=FALSE)
+color2D.matplot(mean_Face,axes=FALSE)
+```
+##Answer:
+
+The mathematical expression of how we construct the approximaiton:
+
+$x_{ij}=(\sum^M_{m=1}z_{im}\phi_{jm})\cdot sdev(x_j) + mean(x_j)$ , where M is the number of principle component we choose. $sdev(x_j)$ is the standard deviation of the $x_j$ column, and $mean(x_j)$ is the original mean of the $x_j$ column.
+
+
+
+```{r}
+pr.out <- prcomp(TrainImages, scale = TRUE)# scale = True scale the variables have standard variation one. Default centers the variabls to have mean zero
+dim(pr.out$rotation)
+dim(pr.out$x)
+```
+
+
+Plot the eigenfaces
+```{r, message=FALSE, warning=FALSE}
+k <-3
+pc <-pr.out$x[, 1:k]
+loading <- t(pr.out$rotation[ , 1:k])
+
+approx_x <- pc %*% loading
+
+#unscale and uncenter the data
+if(pr.out$scale !=FALSE){
+  approx_x <- scale(approx_x, center = FALSE, scale = 1/pr.out$scale)
+}
+
+if(all(pr.out$center != FALSE)){
+  approx_x <-scale(approx_x, center = -1*pr.out$center, scale = FALSE)
+}
+
+n = 2
+par(mfrow = c(n,n),     # 2x2 layout
+    oma = c(0, 0, 0, 0), # controls rows for text at outer  margins
+    mar = c(1, 1, 0, 0), # space for one row of text at ticks and to separate plots
+    mgp = c(2, 1, 0),    # axis label at 2 rows distance, tick labels at 1 row
+    xpd = NA)  
+for (i in 1:n^2){
+  Face = matrix(approx_x[,i],sqrt(NumPixels),byrow=FALSE)
+  color2D.matplot(Face,axes=FALSE)
+}
+```
+
+```{r, message=FALSE, warning=FALSE}
+k <-10
+pc <-pr.out$x[, 1:k]
+loading <- t(pr.out$rotation[ , 1:k])
+
+approx_x <- pc %*% loading
+#unscale and uncenter the data
+if(pr.out$scale !=FALSE){
+  approx_x <- scale(approx_x, center = FALSE, scale = 1/pr.out$scale)
+}
+
+if(all(pr.out$center != FALSE)){
+  approx_x <-scale(approx_x, center = -1*pr.out$center, scale = FALSE)
+}
+
+n = 2
+par(mfrow = c(n,n),     # 2x2 layout
+    oma = c(0, 0, 0, 0), # controls rows for text at outer  margins
+    mar = c(1, 1, 0, 0), # space for one row of text at ticks and to separate plots
+    mgp = c(2, 1, 0),    # axis label at 2 rows distance, tick labels at 1 row
+    xpd = NA)  
+for (i in 1:n^2){
+  Face = matrix(approx_x[,i],sqrt(NumPixels),byrow=FALSE)
+  color2D.matplot(Face,axes=FALSE)
+}
+
+```
+
+```{r, message=FALSE, warning=FALSE}
+k <-25
+pc <-pr.out$x[, 1:k]
+loading <- t(pr.out$rotation[ , 1:k])
+
+approx_x <- pc %*% loading
+#unscale and uncenter the data
+if(pr.out$scale !=FALSE){
+  approx_x <- scale(approx_x, center = FALSE, scale = 1/pr.out$scale)
+}
+
+if(all(pr.out$center != FALSE)){
+  approx_x <-scale(approx_x, center = -1*pr.out$center, scale = FALSE)
+}
+
+n = 2
+par(mfrow = c(n,n),     # 2x2 layout
+    oma = c(0, 0, 0, 0), # controls rows for text at outer  margins
+    mar = c(1, 1, 0, 0), # space for one row of text at ticks and to separate plots
+    mgp = c(2, 1, 0),    # axis label at 2 rows distance, tick labels at 1 row
+    xpd = NA)  
+for (i in 1:n^2){
+  Face = matrix(approx_x[,i],sqrt(NumPixels),byrow=FALSE)
+  color2D.matplot(Face,axes=FALSE)
+}
+```
+
+```{r, message=FALSE, warning=FALSE}
+k <-50
+pc <-pr.out$x[, 1:k]
+loading <- t(pr.out$rotation[ , 1:k])
+
+approx_x <- pc %*% loading
+#unscale and uncenter the data
+if(pr.out$scale !=FALSE){
+  approx_x <- scale(approx_x, center = FALSE, scale = 1/pr.out$scale)
+}
+
+if(all(pr.out$center != FALSE)){
+  approx_x <-scale(approx_x, center = -1*pr.out$center, scale = FALSE)
+}
+
+n = 2
+par(mfrow = c(n,n),     # 2x2 layout
+    oma = c(0, 0, 0, 0), # controls rows for text at outer  margins
+    mar = c(1, 1, 0, 0), # space for one row of text at ticks and to separate plots
+    mgp = c(2, 1, 0),    # axis label at 2 rows distance, tick labels at 1 row
+    xpd = NA)  
+for (i in 1:n^2){
+  Face = matrix(approx_x[,i],sqrt(NumPixels),byrow=FALSE)
+  color2D.matplot(Face,axes=FALSE)
+}
+```
+
+Q2
+a)Generate a simulated data set with 20 observations in each of three classes (i.e. 60 observations
+total), and 50 variables.
+```{r}
+set.seed(1)
+x <- matrix(rnorm(60*50), ncol = 50)
+x[1:20,1:12] <- x[1:20, 1:12] +0.6 #mean shift for the first 12 variables for class 1
+x[1:20,13:50] <- x[1:20,13:50] -0.6 #mean shift for the other 38 variables for class 1
+
+x[21:40, 1:30] <- x[21:40, 1:30] -0.8#mean shift for the first 30 variables for calss 2
+x[21:40, 31:50] <- x[21:40, 31:50] + 0.8#mean shift for the other 20 variables for class 2
+#apply(x,2,sd)
+```
+
+```{r}
+trueclass <- matrix(rnorm(60*1), ncol = 1)
+for (i in 1:nrow(trueclass)){
+  if(i<=20){
+    trueclass[i,1] <-"1"
+  }else if(i>40){
+    trueclass[i,1]<- "2"
+  }else{
+    trueclass[i,1] <-"3"
+  }
+}
+
+```
+
+(b) Perform PCA on the 60 observations and plot the frst two principal component score vectors.
+Use a different color to indicate the observations in each of the three classes. If the three
+classes appear separated in this plot, then continue on to part (c). If not, then return to part
+(a) and modify the simulation so that there is greater separation between the three classes. Do
+not continue to part (c) until the three classes show at least some separation in the first two
+principal component score vectors. (10 marks)
+
+```{r}
+pca <-prcomp(x, scale = TRUE)
+
+```
+
+```{r}
+Cols <- function(vec){
+  cols <-rainbow(length(unique(vec)))
+  return(cols[as.numeric(as.factor(vec))])
+}
+```
+
+
+```{r}
+par(mfrow = c(1,2))
+plot(pca$x[,1:2], col = Cols(trueclass), pch = 19, xlab = "Z1", ylab = "Z2")
+```
+
+(c) Perform K-means clustering of the observations with K = 3. How well do the clusters that you
+obtained in K-means clustering compare to the true class labels? (10 marks)
+
+
+Answer:
+The label might be different form the original one, but the accuracy is 1-3/60 = 0.95.
+```{r}
+set.seed(1)
+three_means<-kmeans(x, 3, nstart = 10)
+table(three_means$cluster, trueclass) 
+```
+
+(d) Perform K-means clustering with K = 2. Describe your results. (5 marks)
+
+
+Answer: When k = 2, the first two true class are combine to be one class, leaving class 3 as one class.
+```{r}
+set.seed(2)
+two_means <- kmeans(x, 2, nstart = 10)
+table(two_means$cluster, trueclass)
+```
+
+```{r}
+par(mfrow = c(1,2))
+plot(pca$x[,1:2], col = Cols(two_means$cluster),main = "2-Means Clustering", pch = 19, xlab = "Z1", ylab = "Z2")
+```
+
+(e) Now perform K-means clustering with K = 4, and describe your results. (5 marks)
+
+Answer:
+We can see that there are two classes(2 and 3) mostly correctly assign, while the majority of class 1 is splited into two seperated classes, being clustered into two classes(1 and 4).
+```{r}
+set.seed(2)
+four_means <- kmeans(x, 4, nstart = 10)
+table(four_means$cluster, trueclass)
+```
+
+```{r}
+par(mfrow = c(1,2))
+plot(pca$x[,1:2], col = Cols(four_means$cluster),main = "4-means Clustering", pch = 19, xlab = "Z1", ylab = "Z2")
+```
+
+(f) Now perform K-means clustering with K = 3 on the first two principal component score vectors,
+rather than on the raw data. That is, perform K-means clustering on the 60$\times$2 matrix of which
+the first column is the first principal component score vector, and the second column is the
+second principal component score vector. Comment on the results. (10 marks)
+
+
+Answer: Though the first two principle components might only explain about 30% of variance, but it stll perform well in clustering, correctly set the 3 class apart, with an accuracy of 90%, even higher than using the original dataset.
+```{r, message=FALSE, warning=FALSE}
+pc2 <-pca$x[,1:2]
+three_means_pca <- kmeans(pc2,3, nstart = 10)
+table(three_means_pca$cluster, trueclass)
+plot(pca$x[,1:2], col = Cols(three_means_pca$cluster),main = "3-means Clustering with the first two principle components", pch = 19, xlab = "Z1", ylab = "Z2")
+```
+```{r}
+pve <- 100*pca$sdev^2/sum(pca$sdev^2)
+par(mfrow = c(1,2))
+plot(cumsum(pve), type = "o", ylab = "Cumulative PVE", xlab = "Principle Compoment", col = "brown3")
+```
+
+(g) Using the scale() function, perform K-means clustering with K = 3 on the data after scaling
+each variable to have standard deviation one. How do these results compare to those obtained
+in (b)? Explain. (10 marks)
+
+
+Answer: After scaling, the accuracy decrease to 1-4/60=0.93. This is due to the scale affecting the distance between the observations.
+
+```{r}
+scale_k_means<- kmeans(scale(x), 3, nstart = 10)
+table(scale_k_means$cluster, trueclass)
+```
+
+
+
